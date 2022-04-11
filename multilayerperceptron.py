@@ -30,6 +30,8 @@ import torch.nn.functional as F
 from dgl import DGLGraph
 import seaborn as sns
 from sklearn.manifold import TSNE
+import imblearn
+from imblearn.under_sampling import RandomUnderSampler
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -46,8 +48,6 @@ from sklearn.metrics import plot_roc_curve
 from sklearn import metrics
 from sklearn.svm import SVC
 
-#test file has PassengerId, Pclass, Name, Sex, Age, SibSp, Parch, Ticket, Fare, Cabin
-#train file has PassengerId, Pclass, Survived, Pclass, Name, Sex, Age, SibSp, Parch, Ticket, Fare
 # Read in and pre-process data
 id_time=["txId", "time_step"]
 columns = ['txId', 'timestep']
@@ -64,46 +64,6 @@ features_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitc
 edgelist_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
 nodetime_csv = pd.read_csv('C:/Users/brind/Documents/DS440/EvolveGCN/data/elliptic_bitcoin_dataset/elliptic_txs_nodetime.csv')
 
-#print(classes_csv)
-#print(features_csv)
-#print(edgelist_csv)
-#print(nodetime_csv)
-
-##
-##classes_csv['class'].value_counts() #157205 rows total
-####
-##features_csv.columns = ['id', 'time'] + [f'trans_feat_{i}' for i in range(93)] + [f'agg_feat_{i}' for i in range(72)]
-##features_csv.head()
-##
-##features_csv = pd.merge(features_csv, classes_csv, left_on='id', right_on='txId', how='left')
-##grouped = features_csv.groupby(['time', 'class'])['id'].count().reset_index().rename(columns={'id': 'count'})
-##
-##features_csv.head()
-##features_csv=features_csv.rename(columns={"class":"Class"})
-##cleaned_df = features_csv.copy()
-##cleaned_df.pop('time')
-##cleaned_df.pop('txId')
-##cleaned_df.pop('id')
-##
-##for i in range(len(cleaned_df)):
-##    if cleaned_df.iloc[i,165] == "1":
-##        cleaned_df.iloc[i,165] = 1
-##    elif cleaned_df.iloc[i,165] == "2":
-##        cleaned_df.iloc[i,165] = 0
-##
-##prueba_0=cleaned_df[cleaned_df['Class']==0] # 1) Split "0" Class array 
-##prueba_0
-######
-##prueba_1=cleaned_df[cleaned_df['Class']==1] # 1) Split "1" Class array 
-##prueba_1
-######
-##prueba=cleaned_df[cleaned_df['Class']==-1]  # 2) Split Class array "-1"
-##prueba
-####
-##
-##prueba['Class']=rand_bin_array(15720,157205)   # 3) Change Class array -1  target with a relation 1/10  Illicit-Licit
-##vertical = pd.concat([prueba, prueba_0,prueba_1], axis=0)
-##vertical=vertical.sort_index()   # 5) Order again
 ##y=vertical['Class']
 ##data= vertical.copy()
 
@@ -115,8 +75,23 @@ test_file = data[data['result'] == "unknown"]
 result = data['result']
 test_file = test_file.loc[:,~test_file.columns.str.contains('result')]
 
+
 train_file = data[data['result'] != "unknown"]
 train_file['result'] = pd.to_numeric(train_file.result) - 1 #fraud 1, nonfraud 0
+
+
+
+fraud = train_file[train_file['result'] == 1]
+nonfraud = train_file[train_file['result'] == 0]#.sample(fraud,axis=0,replace=True)
+fraudsample = fraud.sample(n=len(nonfraud),random_state=1)
+
+
+
+train_file = pd.concat([fraudsample, nonfraud], axis=0)
+#print(train_file[train_file['result'] == 1]) #42019 rows
+#print(train_file[train_file['result'] == 0]) #4545 rows 10% nonfraud transactions
+#sample the fraud class
+
 
 dict_class = { 
     0 : 'Non-fraud',
@@ -125,17 +100,16 @@ dict_class = {
 
 #use train_file instead of data
 # Now the features are a 2 column matrix
-for i in range(len(test_file)):
-    if test_file.iloc[i,2] > 0:
-        test_file.iloc[i,2] = 1
-    else:
-        test_file.iloc[i,2] = -1
-    if test_file.iloc[i,3] > 0:
-        test_file.iloc[i,3] = 1
-    else:
-        test_file.iloc[i,3] = -1
+##for i in range(len(train_file)):
+##    if train_file.iloc[i,2] > 0:
+##        train_file.iloc[i,2] = int(1)
+##    else:
+##        train_file.iloc[i,2] = int(-1)
+##    if train_file.iloc[i,3] > 0:
+##        train_file.iloc[i,3] = int(1)
+##    else:
+##        train_file.iloc[i,3] = int(-1)
 
-print(test_file['feature_1'],test_file['feature_2'])
 features = train_file[['feature_1', 'feature_2']].to_numpy()
 labels = train_file['result'].to_numpy()
 
