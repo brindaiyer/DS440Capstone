@@ -59,10 +59,8 @@ for x in range(165) :
     columns.append('col'+ str(x))
 feature_names = ['feature_'+str(i) for i in range(1,166)]
 column_names = id_time + feature_names
-classes_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv')
+classes_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv') #txId, class
 features_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_features.csv',names=column_names)
-edgelist_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
-nodetime_csv = pd.read_csv('C:/Users/brind/Documents/DS440/EvolveGCN/data/elliptic_bitcoin_dataset/elliptic_txs_nodetime.csv')
 
 # Flatten the data, append class to features
 data = features_csv.assign(result=classes_csv['class'])
@@ -79,7 +77,7 @@ train_file['result'] = pd.to_numeric(train_file.result) - 1 #fraud 1, nonfraud 0
 
 
 fraud = train_file[train_file['result'] == 1]
-nonfraud = train_file[train_file['result'] == 0]#.sample(fraud,axis=0,replace=True)
+nonfraud = train_file[train_file['result'] == 0]
 fraudsample = fraud.sample(n=len(nonfraud),random_state=1)
 train_file = pd.concat([fraudsample, nonfraud], axis=0)
 ytrain_file = train_file.pop('result')
@@ -89,8 +87,6 @@ dict_class = {
     1 : 'Fraud'
 }
 
-#use train_file instead of data
-# Now the features are a 2 column matrix
 sel = SelectBySingleFeaturePerformance(estimator=LinearRegression(), scoring="r2", cv=3, threshold=0.01)
 sel.fit(train_file,ytrain_file)
 sel.features_to_drop_
@@ -221,7 +217,7 @@ def sigmoid_act(x, der=False):
     return f
 
 # We may employ the Rectifier Linear Unit (ReLU)
-def ReLU_act(x, der=False):
+def ReLU_act(x, der=True):
     import numpy as np
     
     if (der == True): # the derivative of the ReLU is the Heaviside Theta
@@ -232,7 +228,9 @@ def ReLU_act(x, der=False):
     return f
 
 #putting labels and features into a train and test set
-X_train, X_test, Y_train, Y_test = train_test_split(features, labels, test_size=0.20, shuffle=True)
+X_train, X_test, Y_train, Y_test = train_test_split(features, labels, test_size=0.20, shuffle=True,random_state=1)
+#X_train, X_val, Y_train, y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
+
 scaler = StandardScaler()
 scaler.fit(X_train)
 X_train = scaler.transform(X_train)
@@ -244,8 +242,8 @@ print('Test records:',Y_test.size) #
 #training the model
 # Set up the number of perceptron per each layer:
 #original p=4,q=4
-p=5 # Layer 1
-q=5 # Layer 2
+p=4 # Layer 1
+q=4 # Layer 2
 
 # Set up the Learning rate
 eta =  1/623
@@ -328,6 +326,7 @@ plt.ylabel('Loss', fontsize=16)
 plt.show()
 
 #define training as a function
+#function where gradient descent is done
 def ANN_train(X_train, Y_train, p, q, eta):
     import numpy as np
     import matplotlib.pyplot as plt
@@ -347,7 +346,7 @@ def ANN_train(X_train, Y_train, p, q, eta):
 
     # Start looping over the bitcoin user ids, i.e. over I.
 
-    for I in range(0, X_train.shape[0]-1): #loop in all the bitcoin user ids:
+    for I in range(0, X_train.shape[0]-1): #(0,X_train.shape[0]) #loop in all the bitcoin user ids:
         # 1: input the data 
         x = X_train[I]
     
@@ -376,13 +375,13 @@ def ANN_train(X_train, Y_train, p, q, eta):
         b1 = b1 - eta*delta_1
     
         # 4. Computation of the loss function
-        mu.append((y-Y_train[I])**2)
-        vec_y.append(y)
-    
+        mu.append((y-Y_train[I])**2) 
+        vec_y.append(y) #y[0]
+
     batch_loss = []
-    for i in range(0, 10):
+    for i in range(0, 10): #range (0,9)
         loss_avg = 0
-        for m in range(0, 60):
+        for m in range(0, 60): #range(0,59)
             loss_avg+=vec_y[60*i+m]/60
         batch_loss.append(loss_avg)
 
@@ -395,7 +394,9 @@ def ANN_train(X_train, Y_train, p, q, eta):
     
     return w1, b1, w2, b2, wOut, bOut, mu
 
-w1, b1, w2, b2, wOut, bOut, mu = ANN_train(X_train, Y_train, p=5, q=5, eta=0.03) #original eta 0.0015
+w1, b1, w2, b2, wOut, bOut, mu = ANN_train(X_train, Y_train, p=10, q=2, eta=0.0015)
+
+X_train, X_val, Y_train, y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
 
 #compute predictions from trained ANN
 def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
@@ -418,11 +419,13 @@ def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
         pred.append( np.heaviside(y - 0.5, 1)[0] )
 
     return np.array(pred);
+
 predictions = ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu)
 
 #Evaluation report
 # Plot the confusion matrix
 cm = confusion_matrix(Y_test, predictions)
+
 
 df_cm = pd.DataFrame(cm, index = [dict_class[i] for i in range(0,2)], columns = [dict_class[i] for i in range(0,2)])
 plt.figure(figsize = (7,7))
@@ -434,8 +437,7 @@ plt.show()
 
 accuracy = round((100 * ((df_cm.iloc[1,1] + df_cm.iloc[0,0]) / (df_cm.iloc[1,1] + df_cm.iloc[0,0] + df_cm.iloc[0,1]+df_cm.iloc[1,0]))), 2)
 print("Test Accuracy:", accuracy, "%") 
-#incorrect = len(result) - (df_cm.iloc[0,0]+df_cm.iloc[0,1]+df_cm.iloc[1,0]+df_cm.iloc[1,1])
-#print("Only", incorrect, "wrong out of", len(result), ", or", 100-accuracy, "%\n")
+
 ##
 misclassification = ((df_cm.iloc[0,1]+df_cm.iloc[1,0])/(df_cm.iloc[1,1] + df_cm.iloc[0,0] + df_cm.iloc[0,1]+df_cm.iloc[1,0]))
 precision = (df_cm.iloc[1,1])/(df_cm.iloc[1,1]+df_cm.iloc[0,1])
@@ -467,6 +469,7 @@ submission = pd.DataFrame({
         "Class": test_predictions
     })
 
+print(submission)
 # Export it in a 'Comma Separated Values' (CSV) file
-submission.to_csv(r'C:\Users\brind\Documents\DS440\multilayerperceptronattempt2.csv', index = None, header=True)
+#submission.to_csv(r'C:\Users\brind\Documents\DS440\firstattempt.csv', index = None, header=True)
 
