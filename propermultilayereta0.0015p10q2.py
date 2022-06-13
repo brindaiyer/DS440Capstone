@@ -420,7 +420,7 @@ def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
 
     return np.array(pred);
 
-predictions = ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu)
+predictions = ANN_pred(X_Val, w1, b1, w2, b2, wOut, bOut, mu)
 
 #Evaluation report
 # Plot the confusion matrix
