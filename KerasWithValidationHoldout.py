@@ -78,14 +78,8 @@ model.compile(optimizer='adam',
 
 ####
 ##### train the model
-validationmodel = model.fit(x_train, y_train, validation_data=(x_val, y_val)) #epochs stands for how many times you go through training set
+model.fit(x_train, y_train, epochs = 1) #epochs stands for how many times you go through training set
 
-
-####
-### test the model
-test_loss, test_acc = model.evaluate(x_test, y_test, verbose="auto")
-print('\nTest accuracy:', test_acc)
-##
 ### Make predictions
 ### A Softmax layer converts the Logit output to probabilities
 probability_model = tf.keras.Sequential([model, 
@@ -94,6 +88,13 @@ probability_model = tf.keras.Sequential([model,
 ##
 ### Use the model to predict the class of the test data
 predictions = model.predict(x_test)
+
+####
+### test the model
+test_loss, test_acc = model.evaluate(x_test, predictions, verbose=0)
+print('\nTest accuracy:', test_acc)
+##
+
 
 ####
 ##### Compute and show the MCC
