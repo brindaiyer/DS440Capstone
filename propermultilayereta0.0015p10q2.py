@@ -396,7 +396,7 @@ def ANN_train(X_train, Y_train, p, q, eta):
 
 w1, b1, w2, b2, wOut, bOut, mu = ANN_train(X_train, Y_train, p=10, q=2, eta=0.0015)
 
-X_train, X_val, Y_train, y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
+X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
 
 #compute predictions from trained ANN
 def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
@@ -424,7 +424,7 @@ predictions = ANN_pred(X_Val, w1, b1, w2, b2, wOut, bOut, mu)
 
 #Evaluation report
 # Plot the confusion matrix
-cm = confusion_matrix(Y_test, predictions)
+cm = confusion_matrix(Y_val, predictions)
 
 
 df_cm = pd.DataFrame(cm, index = [dict_class[i] for i in range(0,2)], columns = [dict_class[i] for i in range(0,2)])
