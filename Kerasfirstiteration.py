@@ -63,7 +63,7 @@ model.compile(optimizer='adam',
 
 ####
 ##### train the model
-#model.fit(x_train, y_train, epochs = 5) #epochs stands for how many times you go through training set
+model.fit(x_train, y_train, epochs = 5) #epochs stands for how many times you go through training set
 
 #saved_model = pickle.dumps(model)
 ####
