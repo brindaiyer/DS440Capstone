@@ -37,13 +37,13 @@ print(predictionid)
 
 y_test = x_test.pop('result')
 
-##fraud = x_train[x_train['result'] == 1]#majority class
-##nonfraud = x_train[x_train['result'] == 0]#minority class
-##nonfraud = nonfraud.sample(len(fraud),replace=True)
+fraud = x_train[x_train['result'] == 1]#majority class
+nonfraud = x_train[x_train['result'] == 0]#minority class
+nonfraud = nonfraud.sample(len(fraud),replace=True)
 ####pd.concat
 ####
 ##
-##x_train = pd.concat([nonfraud,fraud], axis=0)
+x_train = pd.concat([nonfraud,fraud], axis=0)
 y_train = x_train.pop('result')
 
 
