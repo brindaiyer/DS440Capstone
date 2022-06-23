@@ -78,7 +78,7 @@ probability_model = tf.keras.Sequential([model,
 
 ##
 ### Use the model to predict the class of the test data
-predictions = model.predict(x_test)
+predictions = probability_model.predict(x_test)
 
 ####
 ##### Compute and show the MCC
