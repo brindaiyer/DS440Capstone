@@ -46,13 +46,10 @@ from sklearn.svm import SVC
 id_time=["txId", "time_step"]
 feature_names = ['feature_'+str(i) for i in range(1,166)]
 column_names = id_time + feature_names
-orig2contiguos_csv = pd.read_csv('C:/Users/brind/Documents/DS440/EvolveGCN/data/elliptic_bitcoin_dataset/elliptic_txs_orig2contiguos.csv')
-classes_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv')
-#classes_csv.columns = ['txId', 'class_label']
-edgelist_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
-nodetime_csv = pd.read_csv('C:/Users/brind/Documents/DS440/EvolveGCN/data/elliptic_bitcoin_dataset/elliptic_txs_nodetime.csv')
-edgelisttimed_csv = pd.read_csv('C:/Users/brind/Documents/DS440/EvolveGCN/data/elliptic_bitcoin_dataset/elliptic_txs_edgelist_timed.csv')
-features_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_features.csv',names=column_names)
+
+classes_csv = pd.read_csv('C:/Users/brind/Documents/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv')
+edgelist_csv = pd.read_csv('C:/Users/brind/Documents/archive/elliptic_bitcoin_dataset/elliptic_txs_edgelist.csv')
+features_csv = pd.read_csv('C:/Users/brind/Documents/archive/elliptic_bitcoin_dataset/elliptic_txs_features.csv',names=column_names)
 
 ##
 classes_csv['class'].value_counts() #157205 rows total
@@ -83,7 +80,7 @@ cleaned_df.pop('id')
 ####
 print(cleaned_df)
 
-#cleaned_df = cleaned_df.fillna(-1)
+
 for i in range(len(cleaned_df)):
     if cleaned_df.iloc[i,165] == "unknown":
         cleaned_df.iloc[i,165] = -1
@@ -125,12 +122,15 @@ data= vertical.copy()
 vc = data['Class'].value_counts().to_frame().reset_index()
 vc['percent'] = vc["Class"].apply(lambda x : round(100*float(x) / len(data), 2))
 vc = vc.rename(columns = {"index" : "Target", "Class" : "Count"})
-vc #only 8% of transactions are considered to be fraud
+print(vc) #only 8% of transactions are considered to be fraud
 ##
 ###taking a sample of only 1000 fraud cases
 ### We consider Fraud Like "1" and Not Fraud like "0"
 non_fraud = data[data['Class'] == 0].sample(1000)
 fraud = data[data['Class'] == 1]
+
+
+
 ##
 df = non_fraud.append(fraud).sample(frac=1).reset_index(drop=True)
 X = df.drop(['Class'], axis = 1).values
@@ -138,9 +138,9 @@ X = X.astype('float')
 
 Y = df["Class"].values
 ##
-print(X.shape)
 
-###visualizing fraud and non-fraud transactions
+
+#visualizing fraud and non-fraud transactions
 def tsne_plot(x1, y1, name="graph.png"):
     tsne = TSNE(n_components=2, random_state=0)
     X_t = tsne.fit_transform(x1)
@@ -151,7 +151,7 @@ def tsne_plot(x1, y1, name="graph.png"):
 
     plt.legend(loc='best');
     plt.savefig(name);
-    #plt.show();
+    plt.show();
     
 tsne_plot(X, Y, "original.png")
 ##
@@ -183,6 +183,7 @@ autoencoder.fit(x_norm[0:2000], x_norm[0:2000],
                 batch_size = 256, epochs = 10, 
                 shuffle = True, validation_split = 0.20); #validation part
 
+
 ###obtain the latent representations
 hidden_representation = Sequential()
 hidden_representation.add(autoencoder.layers[0])
@@ -209,34 +210,56 @@ train_x, val_x, train_y, val_y = train_test_split(rep_x, rep_y, test_size=0.25)
 
 clf = LogisticRegression(solver="lbfgs",max_iter=4000).fit(train_x, train_y)
 pred_y = clf.predict(val_x)
-print(pred_y)
 
 ##
-print ("")
-print ("Classification Report: ")
-print (classification_report(val_y, pred_y))
-##
-print ("")
-print ("Accuracy Score: ", accuracy_score(val_y, pred_y))
+##print ("")
+##print ("Classification Report: ")
+##print (classification_report(val_y, pred_y))
+####
+##print ("")
+##print ("Accuracy Score: ", accuracy_score(val_y, pred_y))
 ##
 ###Model Evaluation using Confusion Matrix
 cnf_matrix = metrics.confusion_matrix(val_y, pred_y)
-cnf_matrix
+print(cnf_matrix)
 ##
 total1=sum(sum(cnf_matrix))
+
+###calculate sensitivity/same as recall
+sensitivity1 = (cnf_matrix[0,0])/(cnf_matrix[0,0]+cnf_matrix[0,1])
+#sensitivity1 = cnf_matrix[1,1]/(cnf_matrix[1,1]+cnf_matrix[0,1])
+print('Sensitivity : {0:0.2f}'.format(sensitivity1))
 ##
+###calculate specificity
+specificity1 = (cnf_matrix[1,1])/(cnf_matrix[1,0]+cnf_matrix[1,1])
+#specificity1 = cnf_matrix[0,0]/(cnf_matrix[0,1]+cnf_matrix[1,0])
+print('Specificity : {0:0.2f}'.format(specificity1))
+
+#precision
+precision = (cnf_matrix[0,0])/(cnf_matrix[0,0]+cnf_matrix[1,0])
+print ('Precision : {0:0.2f}'.format(precision))
+
+#recall
+recall = (cnf_matrix[0,0])/(cnf_matrix[0,0]+cnf_matrix[0,1])
+print ('Recall : {0:0.2f}'.format(recall))
+##
+
+#f1 score
+f1score = (2*(precision*recall))/(precision+recall)
+print('F1 Score : {0:0.2f}'.format(f1score))
+
+#f2 score
+f2score = (5*precision*recall)/((4*precision)+recall)
+print('F2 Score : {0:0.2f}'.format(f2score))
+#f0.5 score
+fhalfscore = (1.25*((precision*recall)/((0.25*recall)+recall)))
+print('F0.5 Score : {0:0.2f}'.format(fhalfscore))
 ###calculate accuracy
 #######from confusion matrix calculate accuracy
 accuracy1=(cnf_matrix[0,0]+cnf_matrix[1,1])/total1
 print ('Accuracy : {0:0.2f}'.format(accuracy1))
 ##
-###calculate sensitivity
-sensitivity1 = cnf_matrix[0,0]/(cnf_matrix[0,0]+cnf_matrix[0,1])
-print('Sensitivity : {0:0.2f}'.format(sensitivity1 ))
-##
-###calculate specificity
-specificity1 = cnf_matrix[1,1]/(cnf_matrix[1,0]+cnf_matrix[1,1])
-print('Specificity : {0:0.2f}'.format(specificity1))
+
 ##
 ###Visualizing Confusion Matrix using Heatmap
 ###%matplotlib inline
@@ -289,20 +312,6 @@ svc=svc_disp = plot_roc_curve(svc, val_x, val_y)
 ROC_AUC=roc_auc_score(val_y, clf.predict_proba(val_x)[:, 1])
 print('ROC_AUC: {0:0.2f}'.format(ROC_AUC))
 ##
-#FB-Score
-F1=fbeta_score(val_y,yhat[:, 1].round(),beta=1)
-F2=fbeta_score(val_y,yhat[:, 1].round(),beta=2)
-F_0_5=fbeta_score(val_y,yhat[:, 1].round(),beta=0.5)
-
-print('F1-score: {0:0.2f}'.format(F1),'F2-score:  {0:0.2f}'.format(F2), 'F_0.5 score:  {0:0.2f}'.format(F_0_5 ))
-
-#F1-Score
-F1=f1_score(val_y,yhat[:, 1].round(), average=None)
-print('F1_score: {0:0.2f}'.format(F1[1]))
-##
-#Accuracy Score
-AS=accuracy_score(val_y,yhat[:, 1].round())
-print('Accuracy Score: {0:0.2f}'.format(AS))
 
 #Average Precision Recall Score
 average_precision = average_precision_score(val_y,yhat[:, 1].round())
@@ -313,6 +322,3 @@ print('Average precision-recall score: {0:0.2f}'.format(
 disp = plot_precision_recall_curve(clf, val_x, val_y)
 disp.ax_.set_title('2-class Precision-Recall curve: '
                    'AP={0:0.2f}'.format(average_precision))
-
-
-
