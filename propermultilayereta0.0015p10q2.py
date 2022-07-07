@@ -19,6 +19,7 @@ from tensorflow import keras
 from matplotlib import pyplot
 from feature_engine.selection import SelectBySingleFeaturePerformance
 
+
 import dgl
 import dgl.function as fn
 import torch as th
@@ -59,8 +60,8 @@ for x in range(165) :
     columns.append('col'+ str(x))
 feature_names = ['feature_'+str(i) for i in range(1,166)]
 column_names = id_time + feature_names
-classes_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv') #txId, class
-features_csv = pd.read_csv('C:/Users/brind/Documents/DS440/archive/elliptic_bitcoin_dataset/elliptic_txs_features.csv',names=column_names)
+classes_csv = pd.read_csv('C:/Users/brind/Documents/archive/elliptic_bitcoin_dataset/elliptic_txs_classes.csv') #txId, class
+features_csv = pd.read_csv('C:/Users/brind/Documents/archive/elliptic_bitcoin_dataset/elliptic_txs_features.csv',names=column_names)
 
 # Flatten the data, append class to features
 data = features_csv.assign(result=classes_csv['class'])
@@ -80,6 +81,7 @@ fraud = train_file[train_file['result'] == 1]
 nonfraud = train_file[train_file['result'] == 0]
 fraudsample = fraud.sample(n=len(nonfraud),random_state=1)
 train_file = pd.concat([fraudsample, nonfraud], axis=0)
+print(train_file)
 ytrain_file = train_file.pop('result')
 
 dict_class = { 
@@ -95,6 +97,7 @@ train_file_features = sel.transform(train_file)
 
 features = train_file_features.to_numpy()
 labels = ytrain_file.to_numpy()
+
 
 # Define the sigmoid activator; we ask if we want the sigmoid or its derivative
 def sigmoid_act(x, der=False):
@@ -320,7 +323,7 @@ for i in range(0, 9):
 
 plt.figure(figsize=(10,6))
 plt.scatter(np.arange(0, 9), pino, alpha=1, s=10, label='error')
-plt.title('Averege Loss by epoch', fontsize=20)
+plt.title('Average Loss by epoch', fontsize=20)
 plt.xlabel('Epoch', fontsize=16)
 plt.ylabel('Loss', fontsize=16)
 plt.show()
@@ -387,7 +390,7 @@ def ANN_train(X_train, Y_train, p, q, eta):
 
     plt.figure(figsize=(10,6))
     plt.scatter(np.arange(1, len(batch_loss)+1), batch_loss, alpha=1, s=10, label='error')
-    plt.title('Averege Loss by epoch', fontsize=20)
+    plt.title('Average Loss by epoch', fontsize=20)
     plt.xlabel('Epoch', fontsize=16)
     plt.ylabel('Loss', fontsize=16)
     plt.show()
@@ -396,7 +399,7 @@ def ANN_train(X_train, Y_train, p, q, eta):
 
 w1, b1, w2, b2, wOut, bOut, mu = ANN_train(X_train, Y_train, p=10, q=2, eta=0.0015)
 
-X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
+X_train, X_val, Y_train, y_val = train_test_split(X_train, Y_train, test_size=0.25, shuffle=True,random_state=1)
 
 #compute predictions from trained ANN
 def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
@@ -420,11 +423,11 @@ def ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu):
 
     return np.array(pred);
 
-predictions = ANN_pred(X_Val, w1, b1, w2, b2, wOut, bOut, mu)
+predictions = ANN_pred(X_test, w1, b1, w2, b2, wOut, bOut, mu)
 
 #Evaluation report
 # Plot the confusion matrix
-cm = confusion_matrix(Y_val, predictions)
+cm = confusion_matrix(Y_test, predictions)
 
 
 df_cm = pd.DataFrame(cm, index = [dict_class[i] for i in range(0,2)], columns = [dict_class[i] for i in range(0,2)])
@@ -470,6 +473,6 @@ submission = pd.DataFrame({
     })
 
 print(submission)
-# Export it in a 'Comma Separated Values' (CSV) file
-#submission.to_csv(r'C:\Users\brind\Documents\DS440\firstattempt.csv', index = None, header=True)
-
+### Export it in a 'Comma Separated Values' (CSV) file
+##submission.to_csv(r'C:\Users\brind\Documents\solution.csv', index = None, header=True)
+##
