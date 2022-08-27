@@ -74,7 +74,7 @@ for train, test in kfold.split(Xfiles, yfiles):
 
     ####
     ##### train the model
-    #model.fit(x_train, y_train, epochs = 5) #epochs stands for how many times you go through training set
+    model.fit(x_train, y_train, epochs = 5) #epochs stands for how many times you go through training set
 
     # Generate generalization metrics
     scores = model.evaluate(x_test, y_test, verbose=0)
